@@ -6,8 +6,6 @@ tarefaC_seq
 tarefaD_omp
 tarefaD_seq
 
-images/
-
 resultados_tarefaA.csv
 resultados_tarefaB.csv
 resultados_tarefaC.csv

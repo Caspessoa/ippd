@@ -90,7 +90,7 @@ get_var_name() {
     case $1 in
         1) echo "Critical" ;;
         2) echo "Atomic" ;;
-        3) echo "Reduction" ;;
+        3) echo "Aggregation" ;;
     esac
 }
 
