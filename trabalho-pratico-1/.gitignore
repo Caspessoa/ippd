@@ -3,3 +3,10 @@ tarefaA_seq
 tarefaB_omp
 tarefaC_omp
 tarefaC_seq
+
+images/
+
+resultados_tarefaA.csv
+resultados_tarefaB.csv
+resultados_tarefaC.csv
+resultados_tarefaD.csv

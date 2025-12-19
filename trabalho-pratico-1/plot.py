@@ -11,7 +11,7 @@ sns.set_theme(style="whitegrid")
 plt.rcParams.update({'figure.max_open_warning': 0})
 
 def setup_ambiente():
-    """Cria a pasta de imagens se não existir."""
+    """Cria a pasta de images se não existir."""
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
         print(f"Diretório '{OUTPUT_DIR}' criado.")
