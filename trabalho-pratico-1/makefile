@@ -1,77 +1,50 @@
 # ==========================================================================
-# CONFIGURAÇÕES DE COMPILAÇÃO
+# CONFIGURAÇÕES E VARIÁVEIS
 # ==========================================================================
 CC = gcc
 CFLAGS = -Wall -std=gnu99
+C_FLAGS = -O3 -Wall
 OMP_FLAGS = -fopenmp
 OPT_FLAGS = -O3
-LDFLAGS = -lrt -lm
-
-# Diretórios
 SEQ_SRC_DIR = src/seq
 OMP_SRC_DIR = src/omp
 BIN_DIR = .
 
-# --- DEFINIÇÃO DOS EXECUTÁVEIS ---
-# Tarefa A (Fibonacci)
+N ?= 1000000
+K ?= 20
+B ?= 256
+
+# Nomes dos executáveis
 SEQ_A_EXEC = $(BIN_DIR)/tarefaA_seq
 OMP_A_EXEC = $(BIN_DIR)/tarefaA_omp
-
-# Tarefa B (Histograma)
 OMP_B_SRC  = src/omp/tarefaB_omp.c
 OMP_B_EXEC = ./tarefaB_omp
-
-# Tarefa C (SAXPY - SIMD)
 SEQ_C_EXEC = $(BIN_DIR)/tarefaC_seq
 OMP_C_EXEC = $(BIN_DIR)/tarefaC_omp
-
-# Tarefa D (Overhead Fork/Join)
-OMP_D_SRC  = src/omp/tarefaD.c
-OMP_D_EXEC = ./tarefaD
+SEQ_D_EXEC = $(BIN_DIR)/tarefaD_seq
+OMP_D_EXEC = $(BIN_DIR)/tarefaD_omp
 
 # Phony targets (alvos que não são arquivos)
-.PHONY: all clean run
+.PHONY: all clean run plot
 
 # ==========================================================================
-# ALVO PRINCIPAL (DEFAULT) - Apenas Compila
+# ALVO PADRÃO (Apenas Compila)
 # ==========================================================================
-all: tarefaA_seq tarefaA_omp tarefaB_omp tarefaC_seq tarefaC_omp tarefaD
+all: tarefaA_seq tarefaA_omp tarefaB_omp tarefaC_seq tarefaC_omp tarefaD_seq tarefaD_omp
 	@echo "--- Todos os binários foram compilados com sucesso. ---"
-	@echo "Para rodar os testes e gerar gráficos, digite: make run"
+	@echo "Para rodar os testes, digite: make run"
 
 # ==========================================================================
-# ALVO DE AUTOMATIZAÇÃO (Compila -> Roda Scripts -> Plota)
+# ALVO DE EXECUÇÃO (Compila -> Roda -> Plota)
 # ==========================================================================
 run: all
 	@echo ""
-	@echo "========================================"
-	@echo ">>> 1. Rodando Testes da TAREFA A..."
-	@echo "========================================"
-	python3 run_tarefaA.py
-	
+	@echo ">>> 2. Executando Bateria de Testes (run.sh)..."
+	@chmod +x run.sh
+	@./run.sh
 	@echo ""
-	@echo "========================================"
-	@echo ">>> 2. Rodando Testes da TAREFA B..."
-	@echo "========================================"
-	python3 run_tarefaB.py
-	
-	@echo ""
-	@echo "========================================"
-	@echo ">>> 3. Rodando Testes da TAREFA C..."
-	@echo "========================================"
-	python3 run_tarefaC.py
-	
-	@echo ""
-	@echo "========================================"
-	@echo ">>> 4. Rodando Testes da TAREFA D..."
-	@echo "========================================"
-	python3 run_tarefaD.py
-
-	@echo ""
-	@echo "========================================"
-	@echo ">>> 5. Gerando TODOS os Gráficos..."
-	@echo "========================================"
-	python3 plot.py
+	@echo ">>> 3. Gerando Gráficos (plot.py)..."
+	@python3 plot.py
 	@echo ""
 	@echo ">>> PROCESSO COMPLETO! Verifique a pasta 'images/'."
 
@@ -82,12 +55,12 @@ run: all
 # --- Tarefa A ---
 tarefaA_seq: $(SEQ_SRC_DIR)/tarefaA_seq.c
 	@mkdir -p $(BIN_DIR)
-	$(CC) $(SEQ_SRC_DIR)/tarefaA_seq.c -o $(SEQ_A_EXEC) $(CFLAGS) $(OPT_FLAGS) $(LDFLAGS)
+	$(CC) $(SEQ_SRC_DIR)/tarefaA_seq.c -o $(SEQ_A_EXEC) $(CFLAGS) $(OPT_FLAGS) -lrt 
 	@echo "Compilado: $(SEQ_A_EXEC)"
 
 tarefaA_omp: $(OMP_SRC_DIR)/tarefaA_omp.c
 	@mkdir -p $(BIN_DIR)
-	$(CC) $(OMP_SRC_DIR)/tarefaA_omp.c -o $(OMP_A_EXEC) $(CFLAGS) $(OPT_FLAGS) $(OMP_FLAGS) $(LDFLAGS)
+	$(CC) $(OMP_SRC_DIR)/tarefaA_omp.c -o $(OMP_A_EXEC) $(CFLAGS) $(OPT_FLAGS) $(OMP_FLAGS)
 	@echo "Compilado: $(OMP_A_EXEC)"
 
 # --- Tarefa B ---
@@ -95,10 +68,9 @@ tarefaB_omp: $(OMP_B_SRC)
 	$(CC) $(OMP_B_SRC) -o $(OMP_B_EXEC) $(CFLAGS) $(OPT_FLAGS) $(OMP_FLAGS)
 	@echo "Compilado: $(OMP_B_EXEC)"
 
-# --- Tarefa C ---
+# --- Tarefa C (SAXPY) ---
 tarefaC_seq: $(SEQ_SRC_DIR)/tarefaC_seq.c
-	# Flag -fno-tree-vectorize para impedir otimização automática e servir de base
-	$(CC) $(SEQ_SRC_DIR)/tarefaC_seq.c -o $(SEQ_C_EXEC) $(CFLAGS) $(OPT_FLAGS) -fno-tree-vectorize $(LDFLAGS)
+	$(CC) $(SEQ_SRC_DIR)/tarefaC_seq.c -o $(SEQ_C_EXEC) $(CFLAGS) $(OPT_FLAGS) -fno-tree-vectorize -lrt
 	@echo "Compilado: $(SEQ_C_EXEC)"
 
 tarefaC_omp: $(OMP_SRC_DIR)/tarefaC_omp.c
@@ -106,14 +78,20 @@ tarefaC_omp: $(OMP_SRC_DIR)/tarefaC_omp.c
 	@echo "Compilado: $(OMP_C_EXEC)"
 
 # --- Tarefa D ---
-tarefaD: $(OMP_D_SRC)
-	$(CC) $(OMP_D_SRC) -o $(OMP_D_EXEC) $(CFLAGS) $(OPT_FLAGS) $(OMP_FLAGS)
+tarefaD_seq: $(SEQ_SRC_DIR)/tarefaD_seq.c
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(C_FLAGS) $(OMP_FLAGS) -DN=$(N) -DK=$(K) -DB=$(B) $(SEQ_SRC_DIR)/tarefaD_seq.c -o $(SEQ_D_EXEC)
+	@echo "Compilado: $(SEQ_D_EXEC)"
+
+tarefaD_omp: $(OMP_SRC_DIR)/tarefaD_omp.c
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(C_FLAGS) $(OMP_FLAGS) -DN=$(N) -DK=$(K) -DB=$(B) $(OMP_SRC_DIR)/tarefaD_omp.c -o $(OMP_D_EXEC)
 	@echo "Compilado: $(OMP_D_EXEC)"
 
 # ==========================================================================
 # LIMPEZA
 # ==========================================================================
 clean:
-	rm -f *_seq *_omp tarefaD *.csv
+	rm -f *_seq *_omp *.csv
 	rm -rf images/
 	@echo "Limpeza concluída."

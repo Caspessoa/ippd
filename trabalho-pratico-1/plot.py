@@ -6,12 +6,12 @@ import os
 # ==============================================================================
 # CONFIGURAÇÕES GERAIS
 # ==============================================================================
-OUTPUT_DIR = "imagens"
+OUTPUT_DIR = "images"
 sns.set_theme(style="whitegrid")
 plt.rcParams.update({'figure.max_open_warning': 0})
 
 def setup_ambiente():
-    """Cria a pasta de imagens se não existir."""
+    """Cria a pasta de images se não existir."""
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
         print(f"Diretório '{OUTPUT_DIR}' criado.")
@@ -205,71 +205,112 @@ def plot_tarefa_C():
 # TAREFA D: Overhead de Região Paralela
 # ==============================================================================
 def plot_tarefa_D():
-    arquivo = 'resultados_tarefaD.csv'
-    if not os.path.exists(arquivo):
-        print(f"Aviso: {arquivo} não encontrado. Pulando Tarefa D.")
-        return
+    # 1. Carregar CSV
+    try:
+        df = pd.read_csv("resultados_tarefaD.csv")
+    except FileNotFoundError:
+        print("Erro: Arquivo resultados_tarefaD.csv não encontrado.")
+        sys.exit(1)
 
-    print("Gerando gráficos da Tarefa D...")
-    df = pd.read_csv(arquivo)
-    
-    # Garante ordenação para o gráfico de linha não ficar bagunçado
-    df = df.sort_values(by=['N', 'Threads', 'Variante'])
+    # 2. Limpeza Robusta de Dados
+    # Força colunas numéricas a serem números. Erros (como cabeçalhos repetidos) viram NaN
+    cols_numeric = ["N", "K", "B", "THREADS", "NAIVE_MEAN", "CRIT_MEAN", "ATOM_MEAN", "LOCAL_MEAN", "SIMD_MEAN"]
+    for col in cols_numeric:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    configs = df['N'].unique()
-    for n in configs:
-        subset = df[df['N'] == n]
-        
-        # --- GRÁFICO 1: TEMPO DE EXECUÇÃO (Comparativo) ---
-        plt.figure(figsize=(10, 6))
-        sns.lineplot(
-            data=subset, 
-            x='Threads', 
-            y='Tempo', 
-            hue='Variante', 
-            style='Variante', 
-            markers=True, 
-            dashes=False
-        )
-        plt.title(f'Tarefa D: Impacto do Overhead (Fork/Join) - N={n}')
-        plt.ylabel('Tempo (segundos)')
-        plt.xlabel('Threads')
-        plt.xticks(sorted(df['Threads'].unique()))
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        plt.savefig(f"{OUTPUT_DIR}/D_Tempo_N{n}.png")
-        plt.close()
-        
-        # --- GRÁFICO 2: GANHO RELATIVO (Smart / Naive) ---
-        # Calculamos: Tempo_Naive / Tempo_Smart
-        # Se for > 1.0, significa que a Smart é mais rápida (menos overhead)
-        try:
-            # Pivotar a tabela para ter as variantes lado a lado
-            pivoted = subset.pivot(index='Threads', columns='Variante', values='Tempo')
+    # Remove linhas que contêm NaN (isso remove os cabeçalhos repetidos no meio do arquivo)
+    df = df.dropna()
+
+    # Converte N, K, B, THREADS de volta para inteiro (após limpeza)
+    df["N"] = df["N"].astype(int)
+    df["K"] = df["K"].astype(int)
+    df["B"] = df["B"].astype(int)
+    df["THREADS"] = df["THREADS"].astype(int)
+
+    # 3. Filtros
+    target_n = 1000000
+    target_k = 20
+    target_b = 256
+
+    base = df[
+        (df["N"] == target_n) &
+        (df["K"] == target_k) &
+        (df["B"] == target_b)
+    ]
+
+    if base.empty:
+        print(f"Erro: Dados vazios após filtro N={target_n}, K={target_k}, B={target_b}.")
+        print("Dados disponíveis (amostra):")
+        print(df[['N','K','B']].drop_duplicates().head())
+        sys.exit(1)
+
+    plt.rcParams.update({'font.size': 12})
+
+    # =========================================================
+    # Gráfico 1: Tarefa D - Overhead (Naive vs Local)
+    # =========================================================
+    plt.figure(figsize=(10, 6))
+
+    scheds = base["SCHEDULE"].unique()
+    print(f"Schedules encontrados: {scheds}")
+
+    for sched in scheds:
+        # Filtra static-64 (agora com traço, devido à correção no C)
+        if "static" in sched and "64" in sched: 
+            sub = base[base["SCHEDULE"] == sched].sort_values("THREADS")
             
-            # Identifica as colunas (nomes podem variar dependendo do script usado)
-            cols = pivoted.columns
-            # Procura por palavras chave
-            col_naive = next((c for c in cols if 'Naive' in c or 'V1' in c), None)
-            col_smart = next((c for c in cols if 'Smart' in c or 'V2' in c), None)
+            plt.plot(sub["THREADS"], sub["NAIVE_MEAN"], marker="x", linestyle="--", label=f"Naive (2 regions)")
+            plt.plot(sub["THREADS"], sub["LOCAL_MEAN"], marker="o", label=f"Optimized (1 region)")
+            plt.title(f"Overhead de Região Paralela ({sched})")
 
-            if col_naive and col_smart:
-                pivoted['Ratio'] = pivoted[col_naive] / pivoted[col_smart]
-                
-                plt.figure(figsize=(10, 6))
-                sns.lineplot(data=pivoted, x=pivoted.index, y='Ratio', marker='s', color='purple')
-                
-                plt.title(f'Tarefa D: Ganho da Versão Otimizada vs Ingênua - N={n}')
-                plt.ylabel('Quantas vezes mais rápido (Speedup Relativo)')
-                plt.xlabel('Threads')
-                plt.axhline(1, color='red', linestyle='--', label='Igualdade (1x)')
-                plt.legend()
-                plt.grid(True)
-                plt.tight_layout()
-                plt.savefig(f"{OUTPUT_DIR}/D_Ratio_N{n}.png")
-                plt.close()
-        except Exception as e:
-            print(f"  Aviso: Não foi possível gerar gráfico de Ratio para N={n}. Erro: {e}")
+    plt.xlabel("Threads")
+    plt.ylabel("Tempo (s)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"{OUTPUT_DIR}/tarefaD_overhead.png", dpi=150)
+    print("Gerado: tarefaD_overhead.png")
+
+    # =========================================================
+    # Gráfico 2: Comparação Geral (Escala Log)
+    # =========================================================
+    plt.figure(figsize=(10, 6))
+    # Pega o primeiro schedule que contém 'static' como representativo
+    rep_sched = next((s for s in scheds if "static" in s), scheds[0])
+    sub = base[base["SCHEDULE"] == rep_sched].sort_values("THREADS")
+
+    plt.errorbar(sub["THREADS"], sub["CRIT_MEAN"], yerr=sub.get("CRIT_STD", 0), fmt="-^", label="Critical")
+    plt.errorbar(sub["THREADS"], sub["ATOM_MEAN"], yerr=sub.get("ATOM_STD", 0), fmt="-s", label="Atomic")
+    plt.errorbar(sub["THREADS"], sub["LOCAL_MEAN"], yerr=sub.get("LOCAL_STD", 0), fmt="-o", label="Local Aggregation")
+
+    plt.xlabel("Threads")
+    plt.ylabel("Tempo (s)")
+    plt.title(f"Comparação de Sincronização ({rep_sched})")
+    plt.legend()
+    plt.grid(True)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig(f"{OUTPUT_DIR}/comparacao_sincronizacao_D.png", dpi=150)
+    print("Gerado: comparacao_sincronizacao_D.png")
+
+    # =========================================================
+    # Gráfico 3: SIMD
+    # =========================================================
+    plt.figure(figsize=(10, 6))
+
+    w = 0.35
+    plt.bar(sub["THREADS"] - w/2, sub["LOCAL_MEAN"], width=w, label="No SIMD")
+    plt.bar(sub["THREADS"] + w/2, sub["SIMD_MEAN"], width=w, label="With SIMD")
+
+    plt.xlabel("Threads")
+    plt.ylabel("Tempo (s)")
+    plt.title(f"Ganho de Vetorização SIMD ({rep_sched})")
+    plt.xticks(sub["THREADS"])
+    plt.legend()
+    plt.grid(True, axis='y')
+    plt.tight_layout()
+    plt.savefig(f"{OUTPUT_DIR}/ganho_simd_D.png", dpi=150)
+    print("Gerado: ganho_simd_D.png")
 
 
 # ==============================================================================

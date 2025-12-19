@@ -2,6 +2,8 @@
 
 # REPRODUTIBILIDADE
 
+Para garantir a reprodução dos resultados apresentados, detalhamos abaixo o ambiente de hardware e software, bem como as configurações de compilação utilizadas.
+
 ## Ambiente
 
 -   SO: Linux
@@ -12,10 +14,8 @@
 
 ## Compilação
 
--   make omp N=1000000 K=20 B=256
--   export OMP_NUM_THREADS=8
--   export OMP_SCHEDULE=static,1
--   ./bin/omp
+-   $ make
+-   $ make run
 
 ## Parâmetros
 
@@ -24,6 +24,14 @@
 -   B ∈ {32, 256, 4096}
 -   Repetições: 5
 -   Métrica: tempo total e speedup
+
+## Compilação
+
+O projeto utiliza um `Makefile` para padronizar as flags.
+
+-   **Flags de Otimização:** `-O3` (Habilita otimizações agressivas e vetorização automática básica)
+-   **Flags OpenMP:** `-fopenmp`
+-   **Flags de Aviso:** `-Wall`
 
 ## Observações
 

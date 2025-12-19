@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# SCRIPT DE AUTOMATIZAÇÃO - TAREFAS A, B, C
+# SCRIPT DE AUTOMATIZAÇÃO - TAREFAS A, B, C e D
 # Este script compila o projeto e executa as baterias de teste, gerando CSVs.
 # ==============================================================================
 
@@ -100,7 +100,7 @@ for N in "${Ns_B[@]}"; do
             for V in "${VARIANTES[@]}"; do
                 
                 # LÓGICA DE PULO (Skip): Critical é muito lento com N grande e T>1
-                if [ "$V" -eq 1 ] && [ "$T" -gt 1 ] && [ "$N" -gt 1000000 ]; then
+                if [ "$V" -eq 1 ] && [ "$T" -gt 1 ] && [ "$N" -gt 5000000 ]; then
                     echo "  -> [PULADO] Critical T=$T N=$N (Lento demais)"
                     continue
                 fi
@@ -159,39 +159,63 @@ done
 # TAREFA D: Overhead de Região Paralela (Fork/Join)
 # ==============================================================================
 echo -e "${GREEN}>>> [5/5] Executando Tarefa D...${NC}"
+FILE_D_RAW="resultados_tarefaD_raw.csv"
 FILE_D="resultados_tarefaD.csv"
-echo "N,Threads,Variante,Tempo" > $FILE_D
-
+echo "N,K,B,THREADS,SCHEDULE,T_NAIVE,T_CRIT,T_ATOM,T_LOCAL,T_SIMD" > $FILE_D_RAW
 # Parâmetros:
 # N pequeno (100k) evidencia o overhead.
 # N grande (10M) dilui o overhead no tempo de cálculo.
-Ns_D=(100000 1000000 10000000)
-THREADS_D=(1 2 4 8 16)
-VARIANTES_D=(1 2) # 1=Naive (2x Fork), 2=Smart (1x Fork)
+# Loop de compilação e execução
+for N in 100000 500000 1000000; do
+  for K in 20 24 28; do
+    for B in 32 256 4096; do
 
-get_var_d_name() {
-    case $1 in
-        1) echo "Naive_2x_Fork" ;;
-        2) echo "Smart_1x_Fork" ;;
-    esac
-}
+      # CORREÇÃO 1: Usar o alvo correto (tarefaD_omp) e forçar recompilação (-B)
+      # Usamos -B para garantir que ele recompile com os novos defines de N, K e B
+      make -B tarefaD_omp N=$N K=$K B=$B > /dev/null
 
-for N in "${Ns_D[@]}"; do
-    for T in "${THREADS_D[@]}"; do
+      for T in 1 2 4 8 16; do
         export OMP_NUM_THREADS=$T
-        
-        for V in "${VARIANTES_D[@]}"; do
-            V_NAME=$(get_var_d_name $V)
-            
-            echo "  -> Executando: N=$N T=$T Var=$V_NAME"
-            
-            # Executa: ./tarefaD <N> <Variante>
-            TEMPO=$(./tarefaD $N $V)
-            
-            # Salva no CSV
-            echo "$N,$T,$V_NAME,$TEMPO" >> $FILE_D
+
+        for S in "static,1" "static,64" "dynamic,1"; do
+          export OMP_SCHEDULE=$S
+
+          for R in {1..5}; do
+            # CORREÇÃO 2: Executar o binário correto gerado pelo Makefile
+            ./tarefaD_omp >> $FILE_D_RAW
+          done
         done
+
+      done
     done
+  done
 done
+
+# Cabeçalho do arquivo final agregado
+echo "N,K,B,THREADS,SCHEDULE,NAIVE_MEAN,NAIVE_STD,CRIT_MEAN,CRIT_STD,ATOM_MEAN,ATOM_STD,LOCAL_MEAN,LOCAL_STD,SIMD_MEAN,SIMD_STD" > $FILE_D
+
+# AWK para calcular médias e desvios das 5 variantes
+awk -F, '
+{
+  key = $1","$2","$3","$4","$5
+  n[key]++
+  
+  tn[key]+=$6;  tn2[key]+=$6*$6   # Naive
+  tc[key]+=$7;  tc2[key]+=$7*$7   # Critical
+  ta[key]+=$8;  ta2[key]+=$8*$8   # Atomic
+  tl[key]+=$9;  tl2[key]+=$9*$9   # Local
+  ts[key]+=$10; ts2[key]+=$10*$10 # Simd
+}
+END {
+  for (k in n) {
+    mn=tn[k]/n[k]; sn=sqrt(tn2[k]/n[k]-mn*mn)
+    mc=tc[k]/n[k]; sc=sqrt(tc2[k]/n[k]-mc*mc)
+    ma=ta[k]/n[k]; sa=sqrt(ta2[k]/n[k]-ma*ma)
+    ml=tl[k]/n[k]; sl=sqrt(tl2[k]/n[k]-ml*ml)
+    ms=ts[k]/n[k]; ss=sqrt(ts2[k]/n[k]-ms*ms)
+    
+    print k","mn","sn","mc","sc","ma","sa","ml","sl","ms","ss
+  }
+}' $FILE_D_RAW >> $FILE_D
 
 echo -e "${GREEN}>>> Todos os testes concluídos! CSVs gerados.${NC}"
