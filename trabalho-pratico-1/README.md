@@ -126,10 +126,10 @@ Deve ser submetido o link para o repositório no GitHub com o projeto desenvolvi
 
 Neste repositório deve ter:
 
-1. **README.md** com o nome dos membros do grupo e suas responsabilidades no projeto, além de todas as orientações para compilar e executar os programas gerados.
-2. Código em `src/seq` e `src/omp`, `Makefile`, `run.sh`, `plot.py`
-3. **RESULTADOS.md**: tabelas e gráficos, decisões de `schedule`, análise curta e objetiva
-4. **REPRODUTIBILIDADE.md**: versão do compilador, flags, CPU, afinidade, semente do gerador
+1. **[README.md](README.md)** com o nome dos membros do grupo e suas responsabilidades no projeto, além de todas as orientações para compilar e executar os programas gerados.
+2. Código em [src/seq](src/seq) e [src/omp](src/omp), [Makefile](makefile), [run.sh](run.sh), [plot.py](plot.py)
+3. **[RESULTADOS.md](RESULTADOS.md)**: tabelas e gráficos, decisões de `schedule`, análise curta e objetiva
+4. **[REPRODUTIBILIDADE.md](REPRODUTIBILIDADE.md)**: versão do compilador, flags, CPU, afinidade, semente do gerador
 
 ### 10. Avaliação
 
