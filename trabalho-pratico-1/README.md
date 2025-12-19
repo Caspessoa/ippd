@@ -4,7 +4,7 @@
 
 Atividade extra-classe: OpenMP na prática, com ênfase em laços, escalonamento e seções críticas
 
-### 1. Objetivo ✔️
+### 1. Objetivo
 
 Implementar e avaliar versões paralelas em C ou C++ usando OpenMP, com foco em:
 
@@ -13,7 +13,7 @@ Implementar e avaliar versões paralelas em C ou C++ usando OpenMP, com foco em:
 3. Uso correto de `simd` quando houver vetorizaçao possível
 4. Organização da região paralela evitando paralelismo aninhado desnecessário
 
-### 2. Formação de grupos ✔️
+### 2. Formação de grupos
 
 Integrantes & Responsabilidades:
 
@@ -36,11 +36,11 @@ Integrantes & Responsabilidades:
 
 ### 3. Pré-requisitos
 
--   Compilar e executar C ou C++ com OpenMP ✔️
+-   Compilar e executar C ou C++ com OpenMP
 -   Medir tempo de execução e interpretar variância
 -   Noções de contenção e balanceamento de carga
 
-### 4. Ambiente ✔️
+### 4. Ambiente
 
 === SISTEMA ===
 Linux USER 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun 5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
@@ -57,11 +57,11 @@ Python 3.12.3
 === OPENMP (Verificação Básica) ===
 #define \_OPENMP 201511
 
--   GCC ou Clang com OpenMP 5.x ✔️
--   Linux ✔️
+-   GCC ou Clang com OpenMP 5.x
+-   Linux
 -   `Makefile` com alvos: `seq`, `omp`, `run`, `plot`
 
-### 5. Descrição das tarefas ✔️
+### 5. Descrição das tarefas
 
 #### Tarefa A — Laço irregular e políticas de `schedule`
 
@@ -93,7 +93,7 @@ Python 3.12.3
 -   Variante arrumada: uma região `parallel` com dois `for`.
 -   Comparar overhead e tempos.
 
-### 6. Conjuntos de testes e parâmetros ✔️
+### 6. Conjuntos de testes e parâmetros
 
 -   `N ∈ {100000, 500000, 1000000}`
 -   `K ∈ {20, 24, 28}`
@@ -101,20 +101,20 @@ Python 3.12.3
 -   Threads: `{1, 2, 4, 8, 16}`
 -   Cada ponto: média de 5 execuções, reportar desvio padrão
 
-### 7. Medições obrigatórias ✔️
+### 7. Medições obrigatórias
 
--   Tempo total e tempo dos kernels ✔️
--   Escalabilidade por número de threads ✔️
--   Impacto de `schedule` e `chunk` ✔️
--   `critical` vs `atomic` vs agregação local ✔️
--   Ganho de `simd` sobre a versão base ✔️
+-   Tempo total e tempo dos kernels
+-   Escalabilidade por número de threads
+-   Impacto de `schedule` e `chunk`
+-   `critical` vs `atomic` vs agregação local
+-   Ganho de `simd` sobre a versão base
 
 Scripts exigidos:
 
--   `run.sh`: executa a matriz de experimentos e grava CSV ✔️
--   `plot.py`: gera gráficos a partir do CSV (pode usar outra coisa que não seja Python, mas lembre que não tenho outras coisas instaladas na minha máquina e potencialmente terão que me apresentar) ✔️
+-   `run.sh`: executa a matriz de experimentos e grava CSV
+-   `plot.py`: gera gráficos a partir do CSV (pode usar outra coisa que não seja Python, mas lembre que não tenho outras coisas instaladas na minha máquina e potencialmente terão que me apresentar)
 
-### 8. Critérios para usar `atomic` em vez de `critical` ✔️
+### 8. Critérios para usar `atomic` em vez de `critical`
 
 -   Atualização atômica sobre um único escalar endereçável
 -   Sem efeitos colaterais na expressão de atualização
