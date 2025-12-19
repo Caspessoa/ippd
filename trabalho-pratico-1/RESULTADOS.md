@@ -28,6 +28,8 @@ Sempre que possível, deve-se preferir agregação local.
 
 ## 1. Parâmetros dos Testes Apresentados
 
+OBS: Foram utilizados N ∈ {100000, 500000, 1000000} e K ∈ {20, 24, 28}, porém o parâmetros citados abaixo referenciam as imagens do presente relatório
+
 A avaliação foca no cenário de **Desbalanceamento de Carga Extremo**, característico do cálculo recursivo de Fibonacci em um vetor, onde o custo computacional cresce exponencialmente nas últimas iterações.
 
 -   **N (Tamanho do Vetor):** 1.000.000.
