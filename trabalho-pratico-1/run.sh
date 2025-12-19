@@ -81,9 +81,9 @@ echo -e "${GREEN}>>> [3/4] Executando Tarefa B...${NC}"
 FILE_B="resultados_tarefaB.csv"
 echo "N,B,Threads,Variante,Tempo" > $FILE_B
 
-Ns_B=(10000000 50000000)
-Bs=(32 4096)
-THREADS_B=(1 2 4 8)
+Ns_B=(10000000 50000000 1000000)
+Bs=(32 256 4096)
+THREADS_B=(1 2 4 8 16)
 VARIANTES=(1 2 3) # 1=Critical, 2=Atomic, 3=Reduction
 
 get_var_name() {
@@ -126,8 +126,8 @@ echo -e "${GREEN}>>> [4/4] Executando Tarefa C...${NC}"
 FILE_C="resultados_tarefaC.csv"
 echo "N,Threads,Variante,Tempo" > $FILE_C
 
-Ns_C=(10000000 50000000)
-THREADS_C=(1 2 4 8)
+Ns_C=(10000000 50000000 1000000) 
+THREADS_C=(1 2 4 8 16)
 # Variantes C: 1=Seq (Executavel separado), 2=SIMD, 3=Parallel SIMD
 
 for N in "${Ns_C[@]}"; do
@@ -153,6 +153,45 @@ for N in "${Ns_C[@]}"; do
         echo "$N,$T,Parallel_SIMD_V3,$TEMPO_PAR" >> $FILE_C
     done
 
+done
+
+# ==============================================================================
+# TAREFA D: Overhead de Região Paralela (Fork/Join)
+# ==============================================================================
+echo -e "${GREEN}>>> [5/5] Executando Tarefa D...${NC}"
+FILE_D="resultados_tarefaD.csv"
+echo "N,Threads,Variante,Tempo" > $FILE_D
+
+# Parâmetros:
+# N pequeno (100k) evidencia o overhead.
+# N grande (10M) dilui o overhead no tempo de cálculo.
+Ns_D=(100000 1000000 10000000)
+THREADS_D=(1 2 4 8 16)
+VARIANTES_D=(1 2) # 1=Naive (2x Fork), 2=Smart (1x Fork)
+
+get_var_d_name() {
+    case $1 in
+        1) echo "Naive_2x_Fork" ;;
+        2) echo "Smart_1x_Fork" ;;
+    esac
+}
+
+for N in "${Ns_D[@]}"; do
+    for T in "${THREADS_D[@]}"; do
+        export OMP_NUM_THREADS=$T
+        
+        for V in "${VARIANTES_D[@]}"; do
+            V_NAME=$(get_var_d_name $V)
+            
+            echo "  -> Executando: N=$N T=$T Var=$V_NAME"
+            
+            # Executa: ./tarefaD <N> <Variante>
+            TEMPO=$(./tarefaD $N $V)
+            
+            # Salva no CSV
+            echo "$N,$T,$V_NAME,$TEMPO" >> $FILE_D
+        done
+    done
 done
 
 echo -e "${GREEN}>>> Todos os testes concluídos! CSVs gerados.${NC}"
