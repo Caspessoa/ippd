@@ -14,8 +14,8 @@ Para garantir a reprodução dos resultados apresentados, detalhamos abaixo o am
 
 ## Compilação
 
--   $ make
--   $ make run
+-   `$ make`
+-   `$ make run`
 
 ## Parâmetros
 
