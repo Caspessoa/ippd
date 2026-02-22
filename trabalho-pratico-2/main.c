@@ -62,7 +62,28 @@ void executar_carga(double recurso) {
 }
 //---------------------------------------------------------------------------------------
 
--
+/**
+ * Simula a interação do agente com a célula onde ele se encontra.
+ */
+void processar_agente_local(Agente *a, Celula *grid_local, int largura_local) {
+    // Identifica a célula atual no array linear (se for grid 2D linearizado)
+    int idx = a->y * largura_local + a->x;
+    Celula *c = &grid_local[idx];
+
+    // Executa a carga sintética baseada no recurso da célula 
+    executar_carga(c->recurso);
+
+    // Agente consome parte do recurso da célula 
+    double consumo = 10.0; // Valor hipotético de consumo
+    if (c->recurso >= consumo) {
+        c->recurso -= consumo; 
+        a->energia += consumo;
+    } else {
+        a->energia += c->recurso;
+        c->recurso = 0;
+    }
+}
+
 
 
 //====================================================================
