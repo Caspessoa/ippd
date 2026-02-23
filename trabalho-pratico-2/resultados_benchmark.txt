@@ -1,0 +1,56 @@
+=== Benchmark: Simulação Híbrida MPI + OpenMP ===
+Data do teste: Mon Feb 23 00:24:59 -03 2026
+-------------------------------------------------
+
+[Configuração] Processos MPI: 1 | Threads OpenMP: 1
+Tempo total de execucao: 17.326523 segundos
+
+[Configuração] Processos MPI: 1 | Threads OpenMP: 2
+Tempo total de execucao: 12.261145 segundos
+
+[Configuração] Processos MPI: 1 | Threads OpenMP: 4
+Tempo total de execucao: 10.554722 segundos
+
+[Configuração] Processos MPI: 1 | Threads OpenMP: 8
+Tempo total de execucao: 18.745899 segundos
+
+[Configuração] Processos MPI: 2 | Threads OpenMP: 1
+Tempo total de execucao: 21.562032 segundos
+Tempo total de execucao: 22.225202 segundos
+
+[Configuração] Processos MPI: 2 | Threads OpenMP: 2
+Tempo total de execucao: 29.928093 segundos
+Tempo total de execucao: 30.197156 segundos
+
+[Configuração] Processos MPI: 2 | Threads OpenMP: 4
+Tempo total de execucao: 20.988722 segundos
+Tempo total de execucao: 21.007923 segundos
+
+[Configuração] Processos MPI: 2 | Threads OpenMP: 8
+Tempo total de execucao: 20.393934 segundos
+Tempo total de execucao: 20.393971 segundos
+
+[Configuração] Processos MPI: 4 | Threads OpenMP: 1
+Tempo total de execucao: 39.511084 segundos
+Tempo total de execucao: 39.838423 segundos
+Tempo total de execucao: 40.005096 segundos
+Tempo total de execucao: 40.047445 segundos
+
+[Configuração] Processos MPI: 4 | Threads OpenMP: 2
+Tempo total de execucao: 50.208178 segundos
+Tempo total de execucao: 51.146898 segundos
+Tempo total de execucao: 51.441512 segundos
+Tempo total de execucao: 51.935875 segundos
+
+[Configuração] Processos MPI: 4 | Threads OpenMP: 4
+Tempo total de execucao: 41.894722 segundos
+Tempo total de execucao: 42.110960 segundos
+Tempo total de execucao: 42.304217 segundos
+Tempo total de execucao: 42.285902 segundos
+
+[Configuração] Processos MPI: 4 | Threads OpenMP: 8
+Tempo total de execucao: 40.390844 segundos
+Tempo total de execucao: 40.537516 segundos
+Tempo total de execucao: 40.695754 segundos
+Tempo total de execucao: 40.742085 segundos
+-------------------------------------------------
