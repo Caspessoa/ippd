@@ -1,16 +1,21 @@
 #ifndef AGENTE_H
 #define AGENTE_H
 
-// Estrutura sugerida pelo professor
+#define MAX_CUSTO_CARGA 1000000
+#define MAX_AG_THREAD 1000
+
 typedef struct {
-    int x;
-    int y;
+    int x, y;            // Posições locais
+    int gx, gy;          // Posições globais
     double energia;
 } Agente;
 
-// Assinaturas das funções relacionadas ao agente
+typedef struct {
+    Agente agentes[MAX_AG_THREAD];
+    int count;
+} ThreadBuffer;
+
+// Assinaturas
 void executar_carga(double recurso);
-void consumir_recurso(double *recurso_celula, double quantidade);
-void decidir_movimento(Agente *a, int max_x, int max_y);
 
 #endif
