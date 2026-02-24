@@ -23,7 +23,8 @@ typedef enum {
 typedef struct {
     TipoCelula tipo;     
     double recurso;      
-    bool acessivel;      
+    bool acessivel;
+    double consumo_acumulado;      //aqui mudou
 } Celula;
 
 typedef struct {
@@ -35,7 +36,7 @@ typedef struct {
 #define MAX_CUSTO_CARGA 1000000
 
 #define T_TOTAL 100    // Ciclos totais 
-#define S_SAZONAL 10   // Ciclos por estação 
+#define S_SAZONAL 20   // Ciclos por estação 
 #define MAX_AG_THREAD 1000 // Tamanho máximo do buffer por thread
 
 // --- Estrutura para Buffers de Thread ---
@@ -52,6 +53,7 @@ typedef struct {
 #define YEL    "\x1B[33m"
 #define MAG    "\x1B[35m"
 #define CYAN   "\x1B[36m"
+#define GRY    "\x1B[90m" // Código ANSI para Cinza Escuro
 
 void visualizar_subgrid(int rank, int W_local, int H_local, int offsetY, Celula* grid, Agente* agentes, int n_agentes) {
     // Pequena pausa para não atropelar a impressão de outros processos
@@ -73,14 +75,20 @@ void visualizar_subgrid(int rank, int W_local, int H_local, int offsetY, Celula*
             }
 
             if (tem_agente) {
-                printf(RED " @ " RESET); // Agente representado por @
+                printf(RED " @ " RESET); // Agente representado por @ vermelho
             } else {
-                switch (grid[idx].tipo) {
-                    case ALDEIA:    printf(MAG " H " RESET); break;
-                    case PESCA:     printf(BLU " ~ " RESET); break;
-                    case COLETA:    printf(GRN " f " RESET); break;
-                    case ROCADO:    printf(YEL " # " RESET); break;
-                    case INTERDITA: printf(" X "); break;
+                // Se a célula não for interditada e estiver sem recursos, imprime um ponto cinza
+                if (grid[idx].recurso <= 0.0 && grid[idx].tipo != INTERDITA) {
+                    printf(GRY " 0 " RESET); 
+                } else {
+                    // Caso contrário, imprime o terreno normal colorido
+                    switch (grid[idx].tipo) {
+                        case ALDEIA:    printf(MAG " H " RESET); break;
+                        case PESCA:     printf(BLU " ~ " RESET); break;
+                        case COLETA:    printf(GRN " f " RESET); break;
+                        case ROCADO:    printf(YEL " # " RESET); break;
+                        case INTERDITA: printf(" X "); break;
+                    }
                 }
             }
         }
@@ -100,10 +108,10 @@ TipoCelula f_tipo(int gx, int gy) {
 // Define o recurso inicial com base no tipo
 double f_recurso(TipoCelula tipo) {
     switch (tipo) {
-        case ALDEIA: return 100.0;
-        case PESCA:  return 50.0;
-        case COLETA: return 30.0;
-        case ROCADO: return 80.0;
+        case ALDEIA: return 40.0;  
+        case PESCA:  return 20.0;
+        case COLETA: return 20.0;
+        case ROCADO: return 35.0;
         case INTERDITA: return 0.0;
         default: return 10.0;
     }
@@ -144,7 +152,7 @@ int main(int argc, char** argv) {
     // Dimensões Globais 
     int W_global = 20;
     int H_global = 20;
-    int n_agentes_total = 40; // Exemplo 
+    int n_agentes_total = 150; // Exemplo 
 
     // Particionamento (Decomposição de Domínio)
     int W_local = W_global;
@@ -167,6 +175,7 @@ int main(int argc, char** argv) {
             grid_local[idx].tipo = f_tipo(gx, gy);
             grid_local[idx].recurso = f_recurso(grid_local[idx].tipo); 
             grid_local[idx].acessivel = true; 
+            grid_local[idx].consumo_acumulado = 0.0; 
         }
     }
 
@@ -244,38 +253,51 @@ int main(int argc, char** argv) {
                 Agente *a = &lista_agentes[i];
                 int idx = a->y * W_local + a->x;
                 
-                // 1. Carga sintética
+                // 1. Carga sintética proporcional ao recurso da célula ocupada
                 executar_carga(grid_local[idx].recurso);
 
-                // 2. Lógica simplificada de movimento (Random Walk com Paredes Globais)
+                // 2. Consumo de recurso: Múltiplas threads podem somar na mesma célula
+                // O pragma atomic garante que a soma seja segura e sem race conditions
+                #pragma omp atomic
+                grid_local[idx].consumo_acumulado += 15.0; // Consumo arbitrário por agente
+
+                // 3. Lógica de movimento (Random Walk com Paredes Globais)
                 int dx = (rand() % 3) - 1; 
                 int dy = (rand() % 3) - 1;
                 
                 int novo_x = a->x + dx;
                 int novo_y = a->y + dy;
 
-                // Bloqueia a saída pelas laterais Leste/Oeste (Eixo X)
                 if (novo_x < 0) novo_x = 0;
                 if (novo_x >= W_local) novo_x = W_local - 1;
-
-                // Bloqueia a saída pelos extremos Norte/Sul Globais (Eixo Y)
                 if (novo_y < 0 && vizinho_cima == MPI_PROC_NULL) novo_y = 0;
                 if (novo_y >= H_local && vizinho_baixo == MPI_PROC_NULL) novo_y = H_local - 1;
 
-                // Aplica a atualização de movimento de forma segura
-                a->gx += (novo_x - a->x);
-                a->gy += (novo_y - a->y);
-                a->x = novo_x;
-                a->y = novo_y;
+                // 4. Verificação de Acessibilidade (Regra Sazonal/Física)
+                bool pode_mover = true;
+                if (novo_y >= 0 && novo_y < H_local) {
+                    if (!grid_local[novo_y * W_local + novo_x].acessivel) pode_mover = false;
+                } else if (novo_y < 0) {
+                    if (!halo_superior[novo_x].acessivel) pode_mover = false;
+                } else if (novo_y >= H_local) {
+                    if (!halo_inferior[novo_x].acessivel) pode_mover = false;
+                }
 
-                // Verifica se o agente continua no grid local ou se vai migrar
+                // Efetiva o movimento apenas se o destino não for interditado
+                if (pode_mover) {
+                    a->gx += (novo_x - a->x);
+                    a->gy += (novo_y - a->y);
+                    a->x = novo_x;
+                    a->y = novo_y;
+                }
+
+                // 5. Separação para permanência ou migração MPI
                 if (a->y >= 0 && a->y < H_local) {
                     if (buffers_locais[tid].count < MAX_AG_THREAD) {
                         buffers_locais[tid].agentes[buffers_locais[tid].count] = *a; 
                         buffers_locais[tid].count++;
                     }
                 } else {
-                    // Se saiu do limite Y, vai para outro processo MPI
                     #pragma omp critical
                     {
                         if (a->y < 0 && vizinho_cima != MPI_PROC_NULL) {
@@ -347,15 +369,42 @@ int main(int argc, char** argv) {
         free(buffer_envio_cima);
         free(buffer_envio_baixo);
 
+
         // --- 5.5) Atualizar Grid Local (OpenMP) ---
         #pragma omp parallel for collapse(2) 
         for (int j = 0; j < H_local; j++) {
             for (int i = 0; i < W_local; i++) {
                 int idx = j * W_local + i;
+                
+                if (grid_local[idx].tipo == INTERDITA) {
+                    grid_local[idx].acessivel = false;
+                } else if (grid_local[idx].tipo == PESCA) {
+                    grid_local[idx].acessivel = (estacao_atual == CHEIA);
+                } else {
+                    grid_local[idx].acessivel = true;
+                }
+
                 double taxa = (estacao_atual == SECA) ? 1.5 : 3.0;
                 grid_local[idx].recurso += taxa; 
+                
+                grid_local[idx].recurso -= grid_local[idx].consumo_acumulado;
+                
+                // Impede que o recurso fique negativo (O Chão)
+                if (grid_local[idx].recurso < 0.0) {
+                    grid_local[idx].recurso = 0.0;
+                }
+                
+                // NOVO: Impede que o recurso cresça ao infinito (O Teto)
+                // A célula nunca terá mais recurso do que o seu valor inicial nativo
+                double capacidade_maxima = f_recurso(grid_local[idx].tipo);
+                if (grid_local[idx].recurso > capacidade_maxima) {
+                    grid_local[idx].recurso = capacidade_maxima;
+                }
+                
+                grid_local[idx].consumo_acumulado = 0.0;
             }
         }
+
 
         // --- 5.6) Métricas globais (MPI) ---
         int total_agentes_local = n_agentes_locais;
