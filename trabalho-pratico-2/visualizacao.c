@@ -9,6 +9,7 @@
 #define YEL    "\x1B[33m"
 #define MAG    "\x1B[35m"
 #define CYAN   "\x1B[36m"
+#define GRY    "\x1B[90m"
 
 void visualizar_subgrid(int rank, int W_local, int H_local, int offsetY, Celula* grid, Agente* agentes, int n_agentes) {
     MPI_Barrier(MPI_COMM_WORLD); 
