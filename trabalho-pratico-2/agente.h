@@ -5,14 +5,14 @@
 #define MAX_AG_THREAD 1000
 
 typedef struct {
-    int x, y;            // Posições locais
-    int gx, gy;          // Posições globais
-    double energia;
+  int x, y;   // Posições locais
+  int gx, gy; // Posições globais
+  double energia;
 } Agente;
 
 typedef struct {
-    Agente agentes[MAX_AG_THREAD];
-    int count;
+  Agente agentes[MAX_AG_THREAD];
+  int count;
 } ThreadBuffer;
 
 // Assinaturas

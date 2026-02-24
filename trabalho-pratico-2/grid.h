@@ -3,23 +3,14 @@
 
 #include <stdbool.h>
 
-typedef enum {
-    ALDEIA,
-    PESCA,
-    COLETA,
-    ROCADO,
-    INTERDITA
-} TipoCelula;
+typedef enum { ALDEIA, PESCA, COLETA, ROCADO, INTERDITA } TipoCelula;
 
-typedef enum {
-    SECA,
-    CHEIA
-} Estacao;
+typedef enum { SECA, CHEIA } Estacao;
 
 typedef struct {
-    TipoCelula tipo;
-    double recurso;
-    bool acessivel;
+  TipoCelula tipo;
+  double recurso;
+  bool acessivel;
 } Celula;
 
 // Assinaturas das funções
