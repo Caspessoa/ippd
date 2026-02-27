@@ -13,9 +13,21 @@
 $ make
 $ mpirun -np 4 ./simulacao
 $ OMP_NUM_THREADS=4 mpirun -np 4 ./simulacao
-$ ./benchmark.sh
 ```
 
+## Rodar benchmark, uma das opções abaixo
+```bash
+ambiente git bash
+
+$ ./benchmark.sh
+
+ambiente wsl (corrigir quebra de linha)
+
+$ sed -i 's/\r$//' benchmark.sh
+$ sed -i 's/\r$//' Makefile
+$ bash benchmark.sh
+
+```
 ---
 
 ## O Problema
